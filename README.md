@@ -2,6 +2,8 @@
 
 A simple and quick BankID implementation made in Node.js and Express.
 
+**ONLY FOR TESTING PURPOSES!**
+
 ## Example .env
 
 The key and certificate should be placed in a `certificates` folder in the root directory.
