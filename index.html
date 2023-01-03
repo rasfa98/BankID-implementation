@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BankID implementation</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        max-width: 200px;
+        gap: 5px;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>BankID implementation</h1>
+
+    <div class="container">
+      <input placeholder="Personal number" type="text" />
+      <p class="status"></p>
+      <button class="auth-same-device">BankID on this device</button>
+      <button class="auth-other-device" disabled>BankID on other device</button>
+    </div>
+
+    <script>
+      const sameDeviceButton = document.querySelector(".auth-same-device");
+      const otherDeviceButton = document.querySelector(".auth-other-device");
+      const statusParagraph = document.querySelector(".status");
+      const input = document.querySelector("input");
+
+      const pollCollectAuth = async (orderRef) => {
+        const response = await fetch(`/collect-auth?ref=${orderRef}`).then(
+          (res) => res.json()
+        );
+
+        statusParagraph.textContent = response.message;
+
+        if (response.status === "PENDING") {
+          setTimeout(() => {
+            pollCollectAuth(orderRef);
+          }, 2000);
+        }
+
+        if (response.status === "SUCCESS") {
+          console.log(response.data.user);
+        }
+      };
+
+      const handleStartAuthResponse = async (res) => {
+        const response = await res.json();
+
+        statusParagraph.textContent = response.message;
+
+        if (response.data.autoStartToken) {
+          window.location = `bankid:///?autostarttoken=${response.data.autoStartToken}&redirect=null`;
+        }
+
+        if (response.status === "SUCCESS") {
+          pollCollectAuth(response.data.orderRef);
+        }
+      };
+
+      input.addEventListener("change", (e) => {
+        if (e.target.value) {
+          otherDeviceButton.disabled = false;
+        }
+      });
+
+      sameDeviceButton.addEventListener("click", () => {
+        fetch(`/start-auth`).then(handleStartAuthResponse);
+      });
+
+      otherDeviceButton.addEventListener("click", () => {
+        fetch(`/start-auth?ssn=${input.value}`).then(handleStartAuthResponse);
+      });
+    </script>
+  </body>
+</html>
